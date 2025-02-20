@@ -33,6 +33,7 @@ class DriverCyskin : public skin::DriverInterface {
  private:
   std::shared_ptr<EcatHandler> ecat_;
   generic_buffer_cyskin* genbuf_cyskin_;
+  skin::SensorsResponses cyskin_baseline_;
   const char* network_name;
 };
 
@@ -64,8 +65,7 @@ bool DriverCyskin::Attach() {
   genbuf_cyskin_ = ecat_->getCyskinGenericBuffer();
   // get the number of sensors
   size_t num_of_sensors = genbuf_cyskin_->size;
-  size_t num_of_channels =
-      NUMBER_CYSKIN_CHANNELS;  // cyskin channel: contact force
+  size_t num_of_channels = 2;
 
   AddDeviceInfo(skin::DeviceInfo{skin::DeviceType::kPressure, num_of_sensors,
                                  num_of_channels});
@@ -111,6 +111,13 @@ bool DriverCyskin::Attach() {
 
   SetSensorsUIds(devices_info[0], uids);
 
+  // Set the baseline
+  genbuf_cyskin_ = ecat_->getCyskinGenericBuffer();
+  cyskin_baseline_.resize(GetNumberOfSensors());
+  for (int i = 0; i < devices_info[0].number_of_sensors; i++) {
+    cyskin_baseline_[i] = genbuf_cyskin_->cyskin_responces[i];
+  }
+
   // Remember to set is_attached_ to true when the connection is established
   is_attached_ = true;
   return true;
@@ -119,20 +126,15 @@ bool DriverCyskin::Attach() {
 void DriverCyskin::Update() {
   genbuf_cyskin_ = ecat_->getCyskinGenericBuffer();
 
-  // skin::sensorIds_t uids(GetNumberOfSensors());
+  // Get sensors responses
   skin::SensorsResponses sensors_readings(GetNumberOfMeasurements());
-
-  // fill sensor responses data to write on shm (TODO can be done directly in
-  // previous loop)
   for (int i = 0; i < devices_info[0].number_of_sensors; i++) {
-    // uids[i] = genbuf_cyskin_->cyskin_uids[i];
     sensors_readings[i] = genbuf_cyskin_->cyskin_responces[i];
   }
+  // Add the baseline
+  // sensors_readings.insert(sensors_readings.end(), cyskin_baseline_.begin(),cyskin_baseline_.end());
 
-  // SetSensorsUIds(devices_info[0], uids);
-  SetSensorsResponses(devices_info[0], sensors_readings);
-
-  timestamp_ = 0.0;
+  SetSensorsResponses(devices_info[0], std::move(sensors_readings));
 }
 
 bool DriverCyskin::Detach() {
