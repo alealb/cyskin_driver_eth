@@ -573,7 +573,7 @@ void EcatHandler::copy_cydata_to_filtered_buffer() {
 
   for (auto ihb : ihbs) {
     for (auto &module : ihb->get_ihb_devs().get_modules()) {
-      for (uint32_t s = 0; s < module.get_sensors().size(); s++) {
+      for (uint32_t s = 1; s < module.get_sensors().size(); s++) {
         module_uid = module.get_sui();
         sensor_id = module.sensors[s].get_name();
         sensor_uid = COMPUTE_UID_CYSKIN(module_uid, sensor_id);
@@ -786,7 +786,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
     for (auto &module : ihb->get_ihb_devs().get_modules()) {
       std::cout << "module id:  " << (int)module.get_sui() << "\n\n";
       uint16_t cnt = 0;
-      for (uint32_t s = 0; s < module.get_sensors().size(); s++) {
+      for (uint32_t s = 1; s < module.get_sensors().size(); s++) {
         taxel_number++;
         cnt++;
         // std::cout << "taxel number:  " << taxel_number << "\n\n";
@@ -847,7 +847,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
 
   for (auto ihb : ihbs) {
     for (auto &module : ihb->get_ihb_devs().get_modules()) {
-      for (uint32_t s = 0; s < module.get_sensors().size(); s++) {
+      for (uint32_t s = 1; s < module.get_sensors().size(); s++) {
         module_uid = module.get_sui();
         sensor_id = module.sensors[s].get_name();
         sensor_uid = COMPUTE_UID_CYSKIN(module_uid, sensor_id);
@@ -995,22 +995,6 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
         // ";\n";
         //  cout << "calc_and_copy_time  SM3: " << (int) calc_and_copy_time_SM3
         //  << ";\n"; fflush(stdout);
-
-        // myfile << (int)curSegment << ",";
-        // myfile << (int)(curSegment % N_SEGMENTS) << ",";
-        // myfile << (int)minimum_cycle_time_SM2_1 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_1 << "\n";
-        // myfile << (int)minimum_cycle_time_SM2_2 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_2 << "\n";
-        // myfile << (int)minimum_cycle_time_SM2_3 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_3 << "\n";
-        // myfile << (int)minimum_cycle_time_SM2_4 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_4 << "\n";
-        // myfile << (int)minimum_cycle_time_SM2_5 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_5 << "\n";
-        // myfile << (int)minimum_cycle_time_SM2_6 << ",";
-        // myfile << (int)minimum_cycle_time_SM3_6 << "\n";
-        // myfile.flush();
 
         curSegment += 1;
 
