@@ -18,15 +18,7 @@ void signalHandler(int signum) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc <= 1) {
-    std::cout << "Usage: main ifname macro_cycletime check_thread_sleep\n"
-                 "    - ifname = enp2s0 for example\n";
-    return 1;
-  }
-
-  const char* ifname = argv[1];
-
-  driver = std::make_unique<DriverCyskin>(ifname);
+  driver = std::make_unique<DriverCyskin>();
 
   // Register signal SIGINT and signal handler
   signal(SIGINT, signalHandler);

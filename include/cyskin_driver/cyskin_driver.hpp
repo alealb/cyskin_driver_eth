@@ -22,7 +22,7 @@
 
 class DriverCyskin : public skin::DriverInterface {
  public:
-  explicit DriverCyskin(const char* ifname_);
+  explicit DriverCyskin() = default;  // NOLINT [runtime/explicit]
   ~DriverCyskin();
 
   bool Attach() final;
@@ -35,8 +35,6 @@ class DriverCyskin : public skin::DriverInterface {
   skin::SensorsResponses cyskin_baseline_;
   const char* network_name;
 };
-
-DriverCyskin::DriverCyskin(const char* ifname_) { network_name = ifname_; }
 
 DriverCyskin::~DriverCyskin() { Detach(); }
 
