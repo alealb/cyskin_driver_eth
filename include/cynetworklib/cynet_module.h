@@ -21,9 +21,21 @@ class CyModule{
 public:
 
     CyModule(): sensors(0),sui(0),grouping(0),already_cut_sensors(0){}
-    CyModule(const CyModule &);
+    CyModule(const CyModule& m) {
+        sensors = m.sensors;
+        sui = m.sui;
+        grouping = m.grouping;
+        already_cut_sensors = m.already_cut_sensors;
+    }
 
-    CyModule& operator=(const CyModule& m);
+    CyModule& operator=(const CyModule& m) {
+        sensors = m.sensors;
+        sui = m.sui;
+        grouping = m.grouping;
+        already_cut_sensors = m.already_cut_sensors;
+      
+        return *this;
+    }
 
     uint32_t get_sui() const { return sui; }
     uint8_t get_grouping() const { return grouping; }

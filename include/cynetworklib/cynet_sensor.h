@@ -53,16 +53,46 @@ public:
     }
 
     int get_name(){ return sensor_name; }
-    void attach_processor(CySensorMeasurementProcessor *);
-    void detach_processor(CySensorMeasurementProcessor *);
-    void clear_processors();
+
+    void attach_processor(CySensorMeasurementProcessor *p) {
+        mutex.lock();
+        p->s = this;
+        proc.push_back(p);
+        mutex.unlock();
+    }
+    void detach_processor(CySensorMeasurementProcessor *p) {
+        mutex.lock();
+        auto it = std::remove(proc.begin(), proc.end(), p);
+        if (it != proc.end()) {
+          if (*it) delete *it;
+          proc.erase(it, proc.end());
+        }
+        mutex.unlock();
+    }
+
+    void clear_processors() {
+        mutex.lock();
+        while (proc.size()) {
+          proc.erase(std::remove(proc.begin(), proc.end(), *proc.begin()),
+                     proc.end());
+        }
+        mutex.unlock();
+      }
 
     template<typename T> T* get_processor() const {
         auto it = std::find_if(proc.begin(),proc.end(), [](const CySensorMeasurementProcessor* p) { return typeid(*p) == typeid(T) ;});
         return it == proc.end() ? 0 : (T*)*it;
     };
 
-    void add_measurement(uint16_t in);
+    void add_measurement(uint16_t in) {
+        measurement = in;
+        mutex.lock();
+        for (auto &i : proc) {
+          i->add_measurement(in);
+        }
+        mutex.unlock();
+    } 
+    
     uint16_t get_measurement() const {return measurement;};
 
     friend class EcatHandler;
@@ -114,5 +144,5 @@ public:
     bool is_active(){return active;}
     bool is_working(){return working;}
 };
-
+ 
 #endif

@@ -25,8 +25,6 @@ add_compile_options(-Wno-pmf-conversions)
 
 add_executable(
   ${PROJECT_NAME} src/main.cpp
-  src/module.cpp
-  src/sensor.cpp
   src/ecatHandler.cpp
   )
 
