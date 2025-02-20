@@ -24,7 +24,7 @@ EcatHandler::EcatHandler(char *ifname, int macroc_time,
   init_ecatthread();
   init_ecatcheck();
   ecat_init(ifname);
-  remove_baseline = 1;
+  remove_baseline = 0;
 }
 
 EcatHandler::~EcatHandler() {
@@ -584,8 +584,8 @@ void EcatHandler::copy_cydata_to_filtered_buffer() {
           baseline[k] = response;
         } else {
           cyskin_filtered_buffer->cyskin_uids[k] = sensor_uid;
-          cyskin_filtered_buffer->cyskin_responces[k] =
-              (int)(response - baseline[k]) > 0 ? (response - baseline[k]) : 0;
+          // cyskin_filtered_buffer->cyskin_responces[k] = (int)(response - baseline[k]) > 0 ? (response - baseline[k]) : 0;
+          cyskin_filtered_buffer->cyskin_responces[k] = response;
           // cout << "filtered buffer id:    " <<
           // cyskin_filtered_buffer->buffer[bounded_buffer][k] << endl; cout <<
           // "filtered buffer val:    "
