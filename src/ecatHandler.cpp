@@ -47,24 +47,6 @@ EcatHandler::~EcatHandler() {
   delete buffer;
 }
 
-void EcatHandler::makeThisThreadWait() {
-  std::unique_lock<std::mutex> lk(mutex_data);
-  cv_data.wait(lk, [&] { return updated; });
-  updated = false;
-  lk.unlock();
-  cv_data.notify_one();
-}
-
-void EcatHandler::swapBuffer() {
-  // bounded_buffer = (bounded_buffer+1)%2;
-  fflush(stdout);
-  {
-    std::lock_guard<std::mutex> lk(mutex_data);
-    updated = true;
-  }
-  cv_data.notify_one();
-}
-
 void EcatHandler::ecat_init(char *ifname) {
   printf("Starting SM test\n");
   /* initialise SOEM, bind socket to ifname */
@@ -73,8 +55,6 @@ void EcatHandler::ecat_init(char *ifname) {
     /* find and auto-config slaves */
     if (ec_config_init(FALSE) > 0)  // INIT-> PRE-OP state
     {
-      myfile.open("cycle_time_analysis_1_slave_minimum_cycle_time_NEW.csv",
-                  ios::out | ios::app);
       N_SLAVES = ec_slavecount;
       uint32 slave_id[N_SLAVES];
       uint32 slave_sensor_type[N_SLAVES];
@@ -1021,8 +1001,6 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
 
       timespec_get(&t_full_next, TIME_UTC);
       timespec_diff(&t_full_prev, &t_full_next, &t_total);
-      // myfile << (int)t_total.tv_nsec << "\n";
-
       // cout << "Raw timespec.time_t: " << tdiff.tv_sec << "\n" << "Raw
       // timespec.tv_nsec: " << tdiff.tv_nsec << "\n";
     }

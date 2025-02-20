@@ -187,9 +187,6 @@ private:
     // //std::atomic<bool> updated = false;
     bool updated = false;
 
-    std::ofstream myfile;
-
-        
     int macroc_time;
     int thread_sleep;
 
@@ -357,18 +354,6 @@ public:
      */
     int get_is_ecatthread_running();
 
-
-    /**
-     * @brief Swaps the buffer just after the EtherCAT process data has been copied to one of the two buffers.
-     * @return NULL
-     */
-    void swapBuffer() ;
-
-    /**
-     * @brief Wait until the EtherCAT process data has been copied to the local buffer. After that, it is possible to publish it to the shared memory.
-     * @return NULL
-     */
-    void makeThisThreadWait();
 
     
 };
