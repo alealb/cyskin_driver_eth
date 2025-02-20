@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  cyskin_driver_eth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyskin_driver_eth
+    container_name: cyskin_driver_eth-cnt
+    ipc: host
+    network_mode: host
+    restart: unless-stopped
+    privileged: true
+    stdin_open: true
+    tty: true
