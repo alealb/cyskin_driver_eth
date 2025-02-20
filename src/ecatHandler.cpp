@@ -23,7 +23,7 @@ EcatHandler::EcatHandler(char *ifname, int macroc_time,
   set_ecatcheck_sleep(check_thread_sleep);
   init_ecatthread();
   init_ecatcheck();
-  ecat_init(ifname);
+  ecat_init();
   remove_baseline = 0;
 }
 
@@ -47,21 +47,31 @@ EcatHandler::~EcatHandler() {
   delete buffer;
 }
 
-void EcatHandler::ecat_init(char *ifname) {
-  printf("Starting SM test\n");
-  /* initialise SOEM, bind socket to ifname */
-  if (ec_init(ifname)) {
-    printf("ec_init on %s succeeded.\n", ifname);
-    /* find and auto-config slaves */
-    if (ec_config_init(FALSE) > 0)  // INIT-> PRE-OP state
-    {
+void EcatHandler::ecat_init() {
+  // Get all the network interfaces
+  std::vector<std::string> interfaces = get_net_interfaces();
+  // Test the connection and get the correct interface
+  std::string if_name;
+  for(auto &interface : interfaces){
+    if(ec_init(interface.c_str())){
+      if (ec_config_init(FALSE) > 0) {
+        printf("ec_init on %s succeeded.\n", interface.c_str());
+        if_name = interface;
+        break;
+      }
+    }
+  }
+  // If the interface is not found, exit the program
+  if (if_name.empty()){
+    std::cout << "Cannot find the CyNet interface" << std::endl;
+    exit(0);
+  }
+
       N_SLAVES = ec_slavecount;
       uint32 slave_id[N_SLAVES];
       uint32 slave_sensor_type[N_SLAVES];
-
-      printf("%d slaves found and configured.\n", ec_slavecount);
+      // printf("%d slaves found and configured.\n", ec_slavecount);
       ec_config_map(&IOmap);
-
       /*Read slave properties via SDO before OP state(e.g. the type of slave and
        * its payload )*/
       for (int i = 1; i <= ec_slavecount; i++) {
@@ -79,7 +89,7 @@ void EcatHandler::ecat_init(char *ifname) {
           N_TOF_SLAVES += 1;
         else if (slave_sensor_type[i - 1] == TYPE_CYSKIN_SENSOR)
           N_CYSKIN_SLAVES += 1;
-      }
+        } 
 
       /* length of a segment i.e. the data that is contained in a single
        * etherCAT frame */
@@ -195,13 +205,7 @@ void EcatHandler::ecat_init(char *ifname) {
         }
       }
 
-    } else {
-      printf("No slaves found!\n");
-    }
 
-  } else {
-    printf("No socket connection on %s\nExcecute as root\n", ifname);
-  }
 
   // free soem areas
   // free(oloop);
@@ -222,36 +226,15 @@ void EcatHandler::add_timespec(struct timespec *ts, int64 addtime) {
   }
 }
 
-// void EcatHandler::print_data_vector(){
-
-//       for (int slave = 0; slave < N_SLAVES; slave++) {
-//          printf("Vector %d:\n", slave + 1);
-//          for (const auto* ptr : data_vector[slave]) {
-//             printf("id_tof: %d\n", ptr->id_tof);
-//             printf("status_get_measurement: %d\n",
-//             ptr->status_get_measurement);
-
-//             printf("range_status: ");
-//             for (int i = 0; i < VL53L5CX_RESOLUTION_64; ++i) {
-//                   printf("%d ", ptr->range_status[i]);
-//             }
-//             printf("\n");
-
-//             printf("range_val: ");
-//             for (int i = 0; i < VL53L5CX_RESOLUTION_64; ++i) {
-//                   printf("%d ", ptr->range_val[i]);
-//             }
-//             printf("\n");
-
-//             printf("sigma: ");
-//             for (int i = 0; i < VL53L5CX_RESOLUTION_64; ++i) {
-//                   printf("%d ", ptr->sigma[i]);
-//             }
-//             printf("\n");
-//          }
-//       }
-
-// }
+std::vector<std::string> EcatHandler::get_net_interfaces() const noexcept {
+  ec_adaptert *adapter = ec_find_adapters();
+  std::vector<std::string> interfaces;
+  while (adapter) {
+    interfaces.push_back(adapter->name);
+    adapter = adapter->next;
+  }
+  return interfaces;
+}
 
 void EcatHandler::print_TOF_mask() {
   printf("---- TOF mask ----\n");
@@ -376,6 +359,7 @@ void EcatHandler::xmc43_output_cast() {
     out_xmc43[slave] = (out_xmc43_t *)ec_slave[slave + 1].outputs;
   }
 }
+
 void EcatHandler::xmc43_input_cast() {
   in_xmc43 = (in_xmc43_t **)malloc(N_SLAVES * sizeof(*in_xmc43));
   /*cast of the input process data for each slave (INIT state) */
@@ -390,6 +374,7 @@ void EcatHandler::xmc43_set_MSG_ID(uint8_t val) {
     out_xmc43[slave]->MSG_ID = val;
   }
 }
+
 void EcatHandler::xmc43_set_SEGMENT(uint8_t val) {
   for (int slave = 0; slave < N_SLAVES; slave++) {
     out_xmc43[slave]->SEGMENT = val;
@@ -581,6 +566,7 @@ void EcatHandler::copy_cydata_to_filtered_buffer() {
 }
 
 void EcatHandler::set_is_ecatthread_running(int count) { dorun = count; }
+
 int EcatHandler::get_is_ecatthread_running() { return dorun; }
 
 OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
@@ -1058,9 +1044,11 @@ void EcatHandler::init_ecatthread() {
 void EcatHandler::set_RT_thread_macrocycle(int time) {
   this->macroc_time = time;
 }
+
 void EcatHandler::set_ecatcheck_sleep(int time) { this->thread_sleep = time; }
 
 void EcatHandler::set_ECAT_STATE(uint8_t state) { ECAT_STATE = state; }
+
 uint8_t EcatHandler::get_ECAT_STATE() { return ECAT_STATE; }
 
 OSAL_THREAD_FUNC *EcatHandler::ecatcheck(void *ptr) {

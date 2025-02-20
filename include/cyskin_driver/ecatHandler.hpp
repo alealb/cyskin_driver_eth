@@ -201,6 +201,8 @@ private:
     void xmc43_output_cast();
     void xmc43_input_cast();
 
+    std::vector<std::string> get_net_interfaces() const noexcept;
+
     /**
      * @brief Set MSG_ID, i.e., output command related to the kind of data the master wants to receive.
      * @param val MSG_ID value
@@ -273,7 +275,7 @@ public:
      * Activate cyclic process data.
      * Request and wait for all slaves to reach OP state.
      */
-    void ecat_init(char *ifname);
+    void ecat_init();
 
     /**
      * @brief Set the macrocycle period.
@@ -353,8 +355,6 @@ public:
      * @return is_ecatthread_running value. If > 0 ecatthread is running.
      */
     int get_is_ecatthread_running();
-
-
     
 };
 
