@@ -20,4 +20,3 @@ services:
       - ./shared/:/home/shared/
       # Exclude from mounting
       - /home/shared/gitkeep/
-      # - /dev/:/dev/
