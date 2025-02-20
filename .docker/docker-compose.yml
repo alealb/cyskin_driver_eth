@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  cyskin_driver_eth:
+    build:
+      context: ..
+      dockerfile: .docker/Dockerfile
+    container_name: cyskin_driver_eth-dev_cnt
+    image: cyskin_driver_eth-dev
+    network_mode: "host"
+    ipc: host
+    privileged: true
+    tty: true
+    volumes:
+      # Code
+      - ../CMakeLists.txt:/home/cyskin_driver_eth/CMakeLists.txt
+      - ../src/:/home/cyskin_driver_eth/src/
+      - ../include/:/home/cyskin_driver_eth/include/
+      # Mount the shared folder
+      - ./shared/:/home/shared/
+      # Exclude from mounting
+      - /home/shared/gitkeep/
+      # - /dev/:/dev/
