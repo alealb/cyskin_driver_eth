@@ -15,6 +15,7 @@ services:
       - ../CMakeLists.txt:/home/cyskin_driver_eth/CMakeLists.txt
       - ../src/:/home/cyskin_driver_eth/src/
       - ../include/:/home/cyskin_driver_eth/include/
+      - ../src/:/home/cyskin_driver_eth/src/
       # Mount the shared folder
       - ./shared/:/home/shared/
       # Exclude from mounting

@@ -40,6 +40,17 @@ RUN cmake .. -DBUILD_TESTING=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
 RUN make -j4
 RUN make install
 
+# Install SOEM
+WORKDIR /home/
+RUN git clone https://github.com/OpenEtherCATsociety/SOEM.git
+WORKDIR /home/SOEM
+RUN git checkout v1.4.0
+RUN mkdir build
+WORKDIR /home/SOEM/build
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Wno-error=stringop-truncation" ..
+RUN make -j4
+RUN make install
+
 # Set the working directory
 WORKDIR /home/cyskin_driver_eth
 
