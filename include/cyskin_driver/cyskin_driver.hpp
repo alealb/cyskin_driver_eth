@@ -13,7 +13,7 @@
 #define INCLUDE_CYSKIN_DRIVER_CYSKIN_DRIVER_HPP_
 
 // ecat comm
-#include "cynet/ecatHandler.hpp"  // NOLINT [runtime/explicit] [5]
+#include "cyskin_driver/ecatHandler.hpp"  
 
 // #define DEFAULT_MACROCYCLE 66777         // CySKIN frequency in us
 #define DEFAULT_MACROCYCLE 50000  // CySKIN frequency in us

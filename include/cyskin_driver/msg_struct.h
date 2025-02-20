@@ -6,7 +6,7 @@
 #ifndef MSG_STRUCT_H
 #define MSG_STRUCT_H
 
-#include "cynet_ihb.h"
+#include "cynetworklib/cynet_ihb.h"
 
 /* IDs of OUTCOMING MESSAGES */
 #define ID_VL53LX_INIT_MSG              1

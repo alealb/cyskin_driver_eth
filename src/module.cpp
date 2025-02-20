@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "cynet/cynet_module.h"
+#include "cynetworklib/cynet_module.h"
 
 CyModule::CyModule(const CyModule& m) {
   sensors = m.sensors;

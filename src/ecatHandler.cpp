@@ -1,8 +1,8 @@
-#include "cynet/ecatHandler.hpp"
+#include "cyskin_driver/ecatHandler.hpp"
 
 #include <new>
 
-#include "cynet/ihbcmd.h"
+#include "ihb-pc-shared/ihbcmd.h"
 
 void timespec_diff(struct timespec *start, struct timespec *stop,
                    struct timespec *result) {

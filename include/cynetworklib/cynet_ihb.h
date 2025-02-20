@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <atomic>
 #include <thread>
-#include "msg_struct.h"
+#include "cyskin_driver/msg_struct.h"
 #include "cynet_ihb_info.h"
 
 

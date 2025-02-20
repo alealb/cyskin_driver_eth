@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "cynet/cynet_sensor.h"
+#include "cynetworklib/cynet_sensor.h"
 
 void CySensor::attach_processor(CySensorMeasurementProcessor *p) {
   mutex.lock();

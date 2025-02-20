@@ -17,14 +17,14 @@
 #include <inttypes.h>
 #include "ethercat.h"
 #include <functional>   // std::bind
-#include "msg_struct.h"
+#include "cyskin_driver/msg_struct.h"
 #include <vector>
 #include <algorithm>
 #include <iostream>
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <atomic>
-#include "cynet_ihb.h"
+#include "cynetworklib/cynet_ihb.h"
 #include <fstream>
 
 
