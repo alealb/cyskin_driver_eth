@@ -4,34 +4,33 @@
  * @brief Header file for the EcatHandler class.
  */
 
+#ifndef INCLUDE_CYSKIN_DRIVER_ECATHANDLER_HPP_
+#define INCLUDE_CYSKIN_DRIVER_ECATHANDLER_HPP_
+
+#include <inttypes.h>
+#include <math.h>
+#include <pthread.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sched.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
-#include <pthread.h>
-#include <math.h>
-#include <inttypes.h>
-#include "ethercat.h"
-#include <functional>   // std::bind
-#include "cyskin_driver/msg_struct.h"
-#include <vector>
+#include <unistd.h>
+
 #include <algorithm>
-#include <iostream>
-#include <mutex>              // std::mutex, std::unique_lock
-#include <condition_variable> // std::condition_variable
 #include <atomic>
-#include "cynetworklib/cynet_ihb.h"
+#include <condition_variable>  // std::condition_variable
 #include <fstream>
+#include <functional>  // std::bind
+#include <iostream>
+#include <mutex>  // std::mutex, std::unique_lock
+#include <string>
+#include <vector>
 
-
-#ifndef ECATHANDLER_H
-#define ECATHANDLER_H
-
-using namespace std;
+#include "cynetworklib/cynet_ihb.h"
+#include "cyskin_driver/msg_struct.h"
+#include "ethercat.h"  // NOLINT [build/include_subdir]
 
 #define NSEC_PER_SEC 1000000000
 #define EC_TIMEOUTMON 500
@@ -42,81 +41,78 @@ using namespace std;
 #define NUMBER_TOF_CHANNELS 3
 
 #define NUMBER_CYSKIN_ENDPOINTS 1
-#define NUMBER_CYSKIN_CHANNELS  1
+#define NUMBER_CYSKIN_CHANNELS 1
 
-#define N_SEGMENTS 3 /**< Number of segments needed for each slave's payload.*/
-#define SEG_LEN 1280//1280 /**< Length of the segment. TODO: Find a way to retrieve the dimension of the first PDO only. */
+#define N_SEGMENTS 3  // Number of segments needed for each slave's payload.
+#define SEG_LEN \
+  1280  // Length of the segment. TODO(Fra): Find a way to retrieve the
+        // dimension of the first PDO only.
 
-#define TYPE_TOF_SENSOR         0
-#define TYPE_CYSKIN_SENSOR      1
+#define TYPE_TOF_SENSOR 0
+#define TYPE_CYSKIN_SENSOR 1
 
 /**
  * @brief Flag to determine whether to use a vector for buffer storage.
- * 
- * If set to TRUE, the content of 'raw' buffer is copied into 'data_vector' instead of 'filtered_buffer'.
- * WARNING: This feature is not supported by Updater and SharedMemoryPublisher classes.
+ *
+ * If set to TRUE, the content of 'raw' buffer is copied into 'data_vector'
+ * instead of 'filtered_buffer'. WARNING: This feature is not supported by
+ * Updater and SharedMemoryPublisher classes.
  */
 #define USE_VECTOR 0
 
 /* EtherCAT State Machine */
-#define IDLE_STATE              0 /**< Idle state until all slaves go to OP-state. */
-#define INIT_STATE              1 /**< Requests initialization data from slaves. */
-#define DATA_ACQUISITION_STATE  2 /**< Requests sensor measurements from slaves. */
+#define IDLE_STATE 0              // Idle state until all slaves go to OP-state.
+#define INIT_STATE 1              // Requests initialization data from slaves.
+#define DATA_ACQUISITION_STATE 2  // Requests sensor measurements from slaves.
 
-#define TOF_HIGH_RESOLUTION         64
-#define TOF_LOW_RESOLUTION          16
-#define TOF_MAX_FREQUENCY_H_RES     15
-#define TOF_MAX_FREQUENCY_L_RES     30
-#define TOF_SHARPENER_DEFAULT       20
+#define TOF_HIGH_RESOLUTION 64
+#define TOF_LOW_RESOLUTION 16
+#define TOF_MAX_FREQUENCY_H_RES 15
+#define TOF_MAX_FREQUENCY_L_RES 30
+#define TOF_SHARPENER_DEFAULT 20
 
-
-#define COMPUTE_UID_TOF(a,b,c)({a << 10 | b << 6 | c;})
-#define COMPUTE_UID_CYSKIN(a,b)({a << 4 | b;})
+#define COMPUTE_UID_TOF(a, b, c) ({ a << 10 | b << 6 | c; })
+#define COMPUTE_UID_CYSKIN(a, b) ({ a << 4 | b; })
 
 /**
  * @brief Structure of the output commands (Master->Slaves).
  */
-typedef struct PACKED
-{
-    uint8_t MSG_ID;
-    uint8_t SEGMENT;  /**< Starts from 0 to 2 (3 frames for each slave) */
-    uint8_t RES_TOF;
-    uint8_t FREQ_TOF; 
-    uint8_t SHARP_TOF;
-    uint8_t CDC_CYSKIN;
-    uint8_t PERIOD_CYSKIN; 
-    uint8_t SPI_CYSKIN; 
+typedef struct PACKED {
+  uint8_t MSG_ID;
+  uint8_t SEGMENT;  // Starts from 0 to 2 (3 frames for each slave)
+  uint8_t RES_TOF;
+  uint8_t FREQ_TOF;
+  uint8_t SHARP_TOF;
+  uint8_t CDC_CYSKIN;
+  uint8_t PERIOD_CYSKIN;
+  uint8_t SPI_CYSKIN;
 } out_xmc43_t;
 
-typedef struct PACKED
-{
-    uint8_t arr[SEG_LEN];
-    uint16_t slave_id;
-    uint16_t sensor_type;
+typedef struct PACKED {
+  uint8_t arr[SEG_LEN];
+  uint16_t slave_id;
+  uint16_t sensor_type;
 } in_xmc43_t;
 
-typedef struct generic_buffer_tof
-{
-    uint32_t* tof_uids;
-    uint32_t* tof_range_status;
-    uint32_t* tof_range_value;
-    uint32_t* tof_range_sigma;
-    int size;
-    uint16_t active_sensors;
+typedef struct generic_buffer_tof {
+  uint32_t *tof_uids;
+  uint32_t *tof_range_status;
+  uint32_t *tof_range_value;
+  uint32_t *tof_range_sigma;
+  int size;
+  uint16_t active_sensors;
 } generic_buffer_tof;
 
-typedef struct generic_buffer_cyskin
-{
-    uint32_t* cyskin_uids;
-    uint32_t* cyskin_responces;
-    int size;
-    uint16_t active_sensors;
+typedef struct generic_buffer_cyskin {
+  uint32_t *cyskin_uids;
+  uint32_t *cyskin_responces;
+  int size;
+  uint16_t active_sensors;
 } generic_buffer_cyskin;
 
-typedef struct slave_info
-{
-    uint16_t slave_id;
-    uint16_t sensor_type;
+typedef struct slave_info {
+  uint16_t slave_id;
+  uint16_t sensor_type;
 } slave_info;
 
 typedef void *(*THREADFUNCPTR)(void *);
@@ -125,238 +121,260 @@ typedef void *(*THREADFUNCPTR)(void *);
  * @class EcatHandler
  * @brief Class for handling EtherCAT communication.
  */
-class EcatHandler
-{
-private:
-    uint8_t ECAT_STATE = IDLE_STATE; /**< EtherCAT Finite State Machine state */
+class EcatHandler {
+ private:
+  uint8_t ECAT_STATE = IDLE_STATE;  // EtherCAT Finite State Machine state
 
-    uint8_t *buffer; /**< 'raw' local buffer, slaves' input PDOs are copied into it */
-    generic_buffer_tof *tof_filtered_buffer; /**< 'filtered' buffer, copies data only valid sensor data from raw buffer */
-    generic_buffer_cyskin *cyskin_filtered_buffer; /**< 'filtered' buffer, copies data only valid sensor data from raw buffer */
-    std::vector<CyIhb*> ihbs;
+  uint8_t *buffer;  // 'raw' local buffer, slaves' input PDOs are copied into it
 
-    uint8_t actual_TOF_number = 0; /**< Number of detected valid TOFs */
-    uint16_t taxel_number = 0;
+  generic_buffer_tof
+      *tof_filtered_buffer;  // 'filtered' buffer, copies data only valid sensor
+                             // data from raw buffer
 
-    bool remove_baseline;
-    uint32_t steps_baseline;
-    std::vector<uint32_t> baseline;
+  generic_buffer_cyskin
+      *cyskin_filtered_buffer;  // 'filtered' buffer, copies data only valid
+                                // sensor data from raw buffer
 
-    uint8_t **TOF_mask; /**< Array of arrays (2D array) for each slave with active TOF values ('0': not valid, '1': valid) */
-    uint16_t *slave_ids;
-    uint16_t *sensor_types;
-    uint8_t *TOFs_in_slave;
+  std::vector<CyIhb *> ihbs;
 
-    //vector<vector<VL53LX_DATA_64_MSG *>> data_vector; /**< Dynamic array of vectors, used ONLY if USE_VECTOR == TRUE */
+  uint8_t actual_TOF_number = 0;  // Number of detected valid TOFs
+  uint16_t taxel_number = 0;
 
-    uint8_t N_SLAVES;
-    uint8_t N_TOF_SLAVES = 0;
-    uint8_t N_CYSKIN_SLAVES = 0;
-    uint16_t seg_len;
+  bool remove_baseline;
+  uint32_t steps_baseline;
+  std::vector<uint32_t> baseline;
 
-    uint16_t prev_offset = 0;   /**< Offset and slave id needed to copy input data to the correct location of the buffer */
-    uint16_t tmp_offset = 0;
-    uint16_t curr_offset = 0;
-    uint16_t curSegment;
+  uint8_t **TOF_mask;  // Array of arrays (2D array) for each slave with active
+                       // TOF values ('0': not valid, '1': valid)
+  uint16_t *slave_ids;
+  uint16_t *sensor_types;
+  uint8_t *TOFs_in_slave;
 
-    out_xmc43_t **out_xmc43;
-    VL53LX_FULL_INIT_MSG **in_xmc43_init; /**< input PDOs are casted to this structure when ECAT_STATE = INIT_STATE */
-    VL53LX_FULL_DATA_64_MSG **in_xmc43_data; /**< input PDOs are casted to this structure when ECAT_STATE = DATA_ACQUISITION_STATE */
-    in_xmc43_t **in_xmc43;
-    int *oloop; /**< number of output bytes for each slave (index '0' is for master) */
-    int *iloop; /**< number of input bytes for each slave (index '0' is for master) */
+  // vector<vector<VL53LX_DATA_64_MSG *>> data_vector; /**< Dynamic array of
+  // vectors, used ONLY if USE_VECTOR == TRUE */
 
-    pthread_t ecat_thread, check_thread;
-    struct sched_param schedp;
-    //char IOmap[4096]; /**<IOmap that refers to PDO mapping */
-    char IOmap[8000]; /**<IOmap that refers to PDO mapping */
-    int expectedWKC;
-    boolean needlf;
-    volatile int wkc;
-    struct timeval tv, t1, t2;
-    uint8 currentgroup = 0;
+  uint8_t N_SLAVES;
+  uint8_t N_TOF_SLAVES = 0;
+  uint8_t N_CYSKIN_SLAVES = 0;
+  uint16_t seg_len;
 
-    int dorun = 0;
-    boolean inOP;
+  uint16_t prev_offset = 0;  // Offset and slave id needed to copy input data to
+                             // the correct location of the buffer
+  uint16_t tmp_offset = 0;
+  uint16_t curr_offset = 0;
+  uint16_t curSegment;
 
-    //std::atomic<int> bounded_buffer;
-    int bounded_buffer = 0;
-    std::mutex mutex_data;
-    std::condition_variable cv_data;
-    // std::atomic_bool updated = { false };
-    // //std::atomic<bool> updated = false;
-    bool updated = false;
+  out_xmc43_t **out_xmc43;
+  VL53LX_FULL_INIT_MSG *
+      *in_xmc43_init;  // input PDOs are casted to this structure when
+                       // ECAT_STATE = INIT_STATE
+  VL53LX_FULL_DATA_64_MSG *
+      *in_xmc43_data;  // input PDOs are casted to this structure when
+                       // ECAT_STATE = DATA_ACQUISITION_STATE
+  in_xmc43_t **in_xmc43;
+  int *
+      oloop;  // number of output bytes for each slave (index '0' is for master)
+  int *iloop;  // number of input bytes for each slave (index '0' is for master)
 
-    int macroc_time;
-    int thread_sleep;
+  pthread_t ecat_thread, check_thread;
+  struct sched_param schedp;
+  // char IOmap[4096]; // IOmap that refers to PDO mapping
+  char IOmap[8000];  // IOmap that refers to PDO mapping
+  int expectedWKC;
+  boolean needlf;
+  volatile int wkc;
+  struct timeval tv, t1, t2;
+  uint8 currentgroup = 0;
 
-    void add_timespec(struct timespec *_ts, int64 _addtime);
-    void print_slave_buffer(uint8_t slave, uint8_t printOutput, uint8_t printInput);
-    void print_raw_buffer();
-    void print_raw_buffer_single_slave(uint8_t slave);
-    void print_TOF_mask();
-    void print_data_vector();
-    void print_generic_tof_buffer(generic_buffer_tof *b);
-    void print_generic_cyskin_buffer(generic_buffer_cyskin *b);
-    void xmc43_output_cast();
-    void xmc43_input_cast();
+  int dorun = 0;
+  boolean inOP;
 
-    std::vector<std::string> get_net_interfaces() const noexcept;
+  // std::atomic<int> bounded_buffer;
+  int bounded_buffer = 0;
+  std::mutex mutex_data;
+  std::condition_variable cv_data;
+  // std::atomic_bool updated = { false };
+  // //std::atomic<bool> updated = false;
+  bool updated = false;
 
-    /**
-     * @brief Set MSG_ID, i.e., output command related to the kind of data the master wants to receive.
-     * @param val MSG_ID value
-     */
-    void xmc43_set_MSG_ID(uint8_t val);
+  int macroc_time;
+  int thread_sleep;
 
-    /**
-     * @brief Set SEGMENT, i.e., output command related to the i-th segment master wants to receive. (Only used when MSG_ID == DATA_ACQUISITION_STATE)
-     * @param val SEGMENT value
-     */
-    void xmc43_set_SEGMENT(uint8_t val);
+  void add_timespec(struct timespec *_ts, int64 _addtime);
+  void print_slave_buffer(uint8_t slave, uint8_t printOutput,
+                          uint8_t printInput);
+  void print_raw_buffer();
+  void print_raw_buffer_single_slave(uint8_t slave);
+  void print_TOF_mask();
+  void print_data_vector();
+  void print_generic_tof_buffer(generic_buffer_tof *b);
+  void print_generic_cyskin_buffer(generic_buffer_cyskin *b);
+  void xmc43_output_cast();
+  void xmc43_input_cast();
 
-    /**
-     * @brief Set PARAMETERS, i.e., output command used to configure the sensor acquisition paraments 
-     * @param val1 value of param1
-     * @param val2 value of param2
-     * @param val3 value of param3
-     */
-    void xmc43_set_PARAMETERS(uint8_t val1, uint8_t val2, uint8_t val3);
+  std::vector<std::string> get_net_interfaces() const noexcept;
 
-    /**
-     * @brief Copy a certain segment of sensor data from each slave's input space to 'raw' local buffer.
-     *  
-     * Please note that the slave and offset we are interested in are the ones of the previous cycle, 
-     * since we get a response after a cycle.
-     * @param offset Offset value
-     */
-    void copy_segments_to_raw_buffer(uint16_t offset);
+  /**
+   * @brief Set MSG_ID, i.e., output command related to the kind of data the
+   * master wants to receive.
+   * @param val MSG_ID value
+   */
+  void xmc43_set_MSG_ID(uint8_t val);
 
-    // TODO Overloading on following functions
+  /**
+   * @brief Set SEGMENT, i.e., output command related to the i-th segment master
+   * wants to receive. (Only used when MSG_ID == DATA_ACQUISITION_STATE)
+   * @param val SEGMENT value
+   */
+  void xmc43_set_SEGMENT(uint8_t val);
 
-    /**
-     * @brief Copy content of 'raw' local buffer to filtered_buffer. (USE_VECTOR == FALSE)
-     */
-    void copy_raw_buffer_to_tof_filtered_buffer();
+  /**
+   * @brief Set PARAMETERS, i.e., output command used to configure the sensor
+   * acquisition paraments
+   * @param val1 value of param1
+   * @param val2 value of param2
+   * @param val3 value of param3
+   */
+  void xmc43_set_PARAMETERS(uint8_t val1, uint8_t val2, uint8_t val3);
 
-    // /**
-    //  * @brief Copy content of 'raw' local buffer to data_vector. (USE_VECTOR == TRUE)
-    //  */
-    // void copy_raw_buffer_to_vector();
+  /**
+   * @brief Copy a certain segment of sensor data from each slave's input space
+   * to 'raw' local buffer.
+   *
+   * Please note that the slave and offset we are interested in are the ones of
+   * the previous cycle, since we get a response after a cycle.
+   * @param offset Offset value
+   */
+  void copy_segments_to_raw_buffer(uint16_t offset);
 
-    void copy_raw_buffer_to_cydata();
-    void copy_cydata_to_filtered_buffer();
+  // TODO(Fra) Overloading on following functions
 
-public:
-    /**
-     * @brief Constructor for the EcatHandler class.
-     *
-     * @param ifname The name of the Ethernet interface.
-     * @param macroc_time The macro cycle time.
-     * @param check_thread_sleep The sleep time for the check thread.
-     */
-    EcatHandler(char *ifname, int macroc_time, int check_thread_sleep);
+  /**
+   * @brief Copy content of 'raw' local buffer to filtered_buffer. (USE_VECTOR
+   * == FALSE)
+   */
+  void copy_raw_buffer_to_tof_filtered_buffer();
 
-    /**
-     * @brief Destructor.
-     * 
-     * Request safe operational state for all slaves.
-     * Close the socket.
-     */
-    ~EcatHandler();
+  // /**
+  //  * @brief Copy content of 'raw' local buffer to data_vector. (USE_VECTOR ==
+  //  TRUE)
+  //  */
+  // void copy_raw_buffer_to_vector();
 
-    /**
-     * @brief EtherCAT Master initialization.
-     * 
-     * Initialize SOEM, bind socket to ifname.
-     * Find and auto-config slaves.
-     * Configure IOmap.
-     * Allocate 'raw' local buffer.
-     * Activate cyclic process data.
-     * Request and wait for all slaves to reach OP state.
-     */
-    void ecat_init();
+  void copy_raw_buffer_to_cydata();
+  void copy_cydata_to_filtered_buffer();
 
-    /**
-     * @brief Set the macrocycle period.
-     * @param time Macrocycle period
-     */
-    void set_RT_thread_macrocycle(int time);
+ public:
+  /**
+   * @brief Constructor for the EcatHandler class.
+   *
+   * @param ifname The name of the Ethernet interface.
+   * @param macroc_time The macro cycle time.
+   * @param check_thread_sleep The sleep time for the check thread.
+   */
+  EcatHandler(char *ifname, int macroc_time, int check_thread_sleep);
 
-    /**
-     * @brief Set the sleep time of ecatcheck thread.
-     * @param time Sleep time of ecatcheck thread
-     */
-    void set_ecatcheck_sleep(int time);
+  /**
+   * @brief Destructor.
+   *
+   * Request safe operational state for all slaves.
+   * Close the socket.
+   */
+  ~EcatHandler();
 
-    /**
-     * @brief Initialize ecatcheck thread.
-     */
-    void init_ecatcheck();
+  /**
+   * @brief EtherCAT Master initialization.
+   *
+   * Initialize SOEM, bind socket to ifname.
+   * Find and auto-config slaves.
+   * Configure IOmap.
+   * Allocate 'raw' local buffer.
+   * Activate cyclic process data.
+   * Request and wait for all slaves to reach OP state.
+   */
+  void ecat_init();
 
-    /**
-     * @brief Initialize ecatthread thread.
-     */
-    void init_ecatthread();
+  /**
+   * @brief Set the macrocycle period.
+   * @param time Macrocycle period
+   */
+  void set_RT_thread_macrocycle(int time);
 
-    /**
-     * @brief Thread function for EtherCAT communication and data acquisition.
-     *
-     * This function is responsible for handling EtherCAT communication with the slaves and performing data acquisition.
-     *
-     * @param ptr Pointer to the thread data (not used in this function).
-     * @return NULL
-     */
-    OSAL_THREAD_FUNC_RT *ecatthread(void *ptr);
+  /**
+   * @brief Set the sleep time of ecatcheck thread.
+   * @param time Sleep time of ecatcheck thread
+   */
+  void set_ecatcheck_sleep(int time);
 
-    /**
-     * @brief Thread function for EtherCAT slave state checking.
-     *
-     * This function is responsible for continuously checking the state of EtherCAT slaves and performing
-     * appropriate actions based on their current state.
-     *
-     * @param ptr Pointer to the thread data (not used in this function).
-     * @return NULL
-     */
-    OSAL_THREAD_FUNC *ecatcheck(void *ptr);
+  /**
+   * @brief Initialize ecatcheck thread.
+   */
+  void init_ecatcheck();
 
-    /**
-     * @brief Set ECAT_STATE.
-     * @param state EtherCAT state
-     */
-    void set_ECAT_STATE(uint8_t state);
+  /**
+   * @brief Initialize ecatthread thread.
+   */
+  void init_ecatthread();
 
-    /**
-     * @brief Get ECAT_STATE.
-     * @return ECAT_STATE value
-     */
-    uint8_t get_ECAT_STATE();
+  /**
+   * @brief Thread function for EtherCAT communication and data acquisition.
+   *
+   * This function is responsible for handling EtherCAT communication with the
+   * slaves and performing data acquisition.
+   *
+   * @param ptr Pointer to the thread data (not used in this function).
+   * @return NULL
+   */
+  OSAL_THREAD_FUNC_RT *ecatthread(void *ptr);
 
-    /**
-     * @brief Get the generic_buffer_tof struct.
-     * @return Pointer to the generic_buffer_tof struct
-     */
-    generic_buffer_tof *getTofGenericBuffer();
+  /**
+   * @brief Thread function for EtherCAT slave state checking.
+   *
+   * This function is responsible for continuously checking the state of
+   * EtherCAT slaves and performing appropriate actions based on their current
+   * state.
+   *
+   * @param ptr Pointer to the thread data (not used in this function).
+   * @return NULL
+   */
+  OSAL_THREAD_FUNC *ecatcheck(void *ptr);
 
-    /**
-     * @brief Get the generic_buffer_cyskin struct.
-     * @return Pointer to the generic_buffer_cyskin struct
-     */
-    generic_buffer_cyskin *getCyskinGenericBuffer();
+  /**
+   * @brief Set ECAT_STATE.
+   * @param state EtherCAT state
+   */
+  void set_ECAT_STATE(uint8_t state);
 
-    /**
-     * @brief Set the is_ecatthread_running value.
-     * @param count is_ecatthread_running value. If count > 0 ecatthread is running.
-     */
-    void set_is_ecatthread_running(int count);
+  /**
+   * @brief Get ECAT_STATE.
+   * @return ECAT_STATE value
+   */
+  uint8_t get_ECAT_STATE();
 
-    /**
-     * @brief Get the is_ecatthread_running value.
-     * @return is_ecatthread_running value. If > 0 ecatthread is running.
-     */
-    int get_is_ecatthread_running();
-    
+  /**
+   * @brief Get the generic_buffer_tof struct.
+   * @return Pointer to the generic_buffer_tof struct
+   */
+  generic_buffer_tof *getTofGenericBuffer();
+
+  /**
+   * @brief Get the generic_buffer_cyskin struct.
+   * @return Pointer to the generic_buffer_cyskin struct
+   */
+  generic_buffer_cyskin *getCyskinGenericBuffer();
+
+  /**
+   * @brief Set the is_ecatthread_running value.
+   * @param count is_ecatthread_running value. If count > 0 ecatthread is
+   * running.
+   */
+  void set_is_ecatthread_running(int count);
+
+  /**
+   * @brief Get the is_ecatthread_running value.
+   * @return is_ecatthread_running value. If > 0 ecatthread is running.
+   */
+  int get_is_ecatthread_running();
 };
 
-#endif
-
+#endif  // INCLUDE_CYSKIN_DRIVER_ECATHANDLER_HPP_

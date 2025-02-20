@@ -5,11 +5,11 @@ repos:
     hooks:
       - id: clang-format
         args: [--style=Google, -i]
-        exclude: ^(include/cynetworklib|include/ihb-pc-shared|skin-ihb-pc-shared)/
+        exclude: ^(include/cynetworklib|include/ihb-pc-shared|include/skin-ihb-pc-shared)/
       - id: cpplint
-        exclude: ^(include/cynetworklib|include/ihb-pc-shared|skin-ihb-pc-shared)/
+        exclude: ^(include/cynetworklib|include/ihb-pc-shared|include/skin-ihb-pc-shared)/
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
     -   id: trailing-whitespace
-        exclude: ^(include/cynetworklib|include/ihb-pc-shared|skin-ihb-pc-shared)/
+        exclude: ^(include/cynetworklib|include/ihb-pc-shared|include/skin-ihb-pc-shared)/

@@ -5,15 +5,14 @@
  * University of Genoa
  */
 
-#include <memory>
-
-#include "skin/communication/driver_interface.hpp"
-
 #ifndef INCLUDE_CYSKIN_DRIVER_CYSKIN_DRIVER_HPP_
 #define INCLUDE_CYSKIN_DRIVER_CYSKIN_DRIVER_HPP_
 
-// ecat comm
-#include "cyskin_driver/ecatHandler.hpp"  
+#include <memory>
+#include <utility>
+
+#include "cyskin_driver/ecatHandler.hpp"
+#include "skin/communication/driver_interface.hpp"
 
 // #define DEFAULT_MACROCYCLE 66777         // CySKIN frequency in us
 #define DEFAULT_MACROCYCLE 50000  // CySKIN frequency in us
@@ -37,9 +36,7 @@ class DriverCyskin : public skin::DriverInterface {
   const char* network_name;
 };
 
-DriverCyskin::DriverCyskin(const char* ifname_) {
-  network_name = ifname_;
-}
+DriverCyskin::DriverCyskin(const char* ifname_) { network_name = ifname_; }
 
 DriverCyskin::~DriverCyskin() { Detach(); }
 
@@ -133,7 +130,8 @@ void DriverCyskin::Update() {
     sensors_readings[i] = genbuf_cyskin_->cyskin_responces[i];
   }
   // Add the baseline
-  sensors_readings.insert(sensors_readings.end(), cyskin_baseline_.begin(),cyskin_baseline_.end());
+  sensors_readings.insert(sensors_readings.end(), cyskin_baseline_.begin(),
+                          cyskin_baseline_.end());
 
   SetSensorsResponses(devices_info[0], std::move(sensors_readings));
 }

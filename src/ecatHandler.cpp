@@ -52,8 +52,8 @@ void EcatHandler::ecat_init() {
   std::vector<std::string> interfaces = get_net_interfaces();
   // Test the connection and get the correct interface
   std::string if_name;
-  for(auto &interface : interfaces){
-    if(ec_init(interface.c_str())){
+  for (auto &interface : interfaces) {
+    if (ec_init(interface.c_str())) {
       if (ec_config_init(FALSE) > 0) {
         // printf("ec_init on %s succeeded.\n", interface.c_str());
         if_name = interface;
@@ -62,148 +62,144 @@ void EcatHandler::ecat_init() {
     }
   }
   // If the interface is not found, exit the program
-  if (if_name.empty()){
+  if (if_name.empty()) {
     std::cout << "Cannot find the CyNet interface" << std::endl;
     exit(0);
   }
 
-      N_SLAVES = ec_slavecount;
-      uint32 slave_id[N_SLAVES];
-      uint32 slave_sensor_type[N_SLAVES];
-      // printf("%d slaves found and configured.\n", ec_slavecount);
-      ec_config_map(&IOmap);
-      /*Read slave properties via SDO before OP state(e.g. the type of slave and
-       * its payload )*/
-      for (int i = 1; i <= ec_slavecount; i++) {
-        // printf("Slave %d (%s) State: %d\n", i, ec_slave[i].name,ec_slave[i].state);
-        uint32 data;  // data will be stored here
-        int rdl = sizeof(data);
-        ec_SDOread(i, 0x6010, 0x01, FALSE, &rdl, &data, EC_TIMEOUTRXM);
-        slave_id[i - 1] = data;
-        ec_SDOread(i, 0x6010, 0x02, FALSE, &rdl, &data, EC_TIMEOUTRXM);
-        slave_sensor_type[i - 1] = data;
-        // printf("SLAVE ID: %d, SLAVE SENSOR_TYPE: %d\n", slave_id[i - 1], slave_sensor_type[i - 1]);
-        if (slave_sensor_type[i - 1] == TYPE_TOF_SENSOR)
-          N_TOF_SLAVES += 1;
-        else if (slave_sensor_type[i - 1] == TYPE_CYSKIN_SENSOR)
-          N_CYSKIN_SLAVES += 1;
-        } 
+  N_SLAVES = ec_slavecount;
+  uint32 slave_id[N_SLAVES];
+  uint32 slave_sensor_type[N_SLAVES];
+  // printf("%d slaves found and configured.\n", ec_slavecount);
+  ec_config_map(&IOmap);
+  /*Read slave properties via SDO before OP state(e.g. the type of slave and
+   * its payload )*/
+  for (int i = 1; i <= ec_slavecount; i++) {
+    // printf("Slave %d (%s) State: %d\n", i,
+    // ec_slave[i].name,ec_slave[i].state);
+    uint32 data;  // data will be stored here
+    int rdl = sizeof(data);
+    ec_SDOread(i, 0x6010, 0x01, FALSE, &rdl, &data, EC_TIMEOUTRXM);
+    slave_id[i - 1] = data;
+    ec_SDOread(i, 0x6010, 0x02, FALSE, &rdl, &data, EC_TIMEOUTRXM);
+    slave_sensor_type[i - 1] = data;
+    // printf("SLAVE ID: %d, SLAVE SENSOR_TYPE: %d\n", slave_id[i - 1],
+    // slave_sensor_type[i - 1]);
+    if (slave_sensor_type[i - 1] == TYPE_TOF_SENSOR)
+      N_TOF_SLAVES += 1;
+    else if (slave_sensor_type[i - 1] == TYPE_CYSKIN_SENSOR)
+      N_CYSKIN_SLAVES += 1;
+  }
 
-      /* length of a segment i.e. the data that is contained in a single
-       * etherCAT frame */
-      seg_len = SEG_LEN;
-      /* initalise with zeros the buffer that'll contain sensor data of each
-       * slave  (i.e. 3 frames of seg_len size each for each slave) */
-      // buffer= calloc(N_SLAVES* N_SEGMENTS*seg_len,sizeof(uint8));
+  /* length of a segment i.e. the data that is contained in a single
+   * etherCAT frame */
+  seg_len = SEG_LEN;
+  /* initalise with zeros the buffer that'll contain sensor data of each
+   * slave  (i.e. 3 frames of seg_len size each for each slave) */
+  // buffer= calloc(N_SLAVES* N_SEGMENTS*seg_len,sizeof(uint8_t));
 
-      /* wait for all slaves to reach SAFE_OP state */
-      ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
+  /* wait for all slaves to reach SAFE_OP state */
+  ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
 
-      /* read individual slave state and store in ec_slave[] */
-      ec_readstate();
+  /* read individual slave state and store in ec_slave[] */
+  ec_readstate();
 
-      /* number of input and output bytes for each slave (0 is for master) */
-      oloop = (int *)malloc((N_SLAVES + 1) * sizeof(int));
-      iloop = (int *)malloc((N_SLAVES + 1) * sizeof(int));
-      // oloop= new int(N_SLAVES*sizeof(int));
-      // iloop= new int(N_SLAVES*sizeof(int));
+  /* number of input and output bytes for each slave (0 is for master) */
+  oloop = reinterpret_cast<int *>(malloc((N_SLAVES + 1) * sizeof(int)));
+  iloop = reinterpret_cast<int *>(malloc((N_SLAVES + 1) * sizeof(int)));
+  // oloop= new int(N_SLAVES*sizeof(int));
+  // iloop= new int(N_SLAVES*sizeof(int));
 
-      // printf("%d\n", *oloop);
-      // printf("%d\n", *iloop);
+  // printf("%d\n", *oloop);
+  // printf("%d\n", *iloop);
 
-      for (int slave = 0; slave <= N_SLAVES; slave++) {
-        oloop[slave] = ec_slave[slave].Obytes;
-        if ((oloop[slave] == 0) && (ec_slave[slave].Obits > 0))
-          oloop[slave] = 1;
-        iloop[slave] = ec_slave[slave].Ibytes;
-        if ((iloop[slave] == 0) && (ec_slave[slave].Ibits > 0))
-          iloop[slave] = 1;
+  for (int slave = 0; slave <= N_SLAVES; slave++) {
+    oloop[slave] = ec_slave[slave].Obytes;
+    if ((oloop[slave] == 0) && (ec_slave[slave].Obits > 0)) oloop[slave] = 1;
+    iloop[slave] = ec_slave[slave].Ibytes;
+    if ((iloop[slave] == 0) && (ec_slave[slave].Ibits > 0)) iloop[slave] = 1;
+  }
+
+  // printf("M: output bytes: %d, input bytes: %d\n", oloop[0], iloop[0]);
+  // printf("S1: output bytes: %d, input bytes: %d\n", oloop[1],
+  //        iloop[1]);  // print of first slave I/O bytes, as an example
+  // printf("S2: output bytes: %d, input bytes: %d\n", oloop[2], iloop[2]);
+  // printf("S3: output bytes: %d, input bytes: %d\n",oloop[3],iloop[3]);
+  // printf("S4: output bytes: %d, input bytes: %d\n",oloop[4],iloop[4]);
+  // printf("S5: output bytes: %d, input bytes: %d\n",oloop[5],iloop[5]);
+  // printf("S6: output bytes: %d, input bytes: %d\n",oloop[6],iloop[6]);
+  // printf("segments : %d : %d %d %d %d\n", ec_group[0].nsegments,
+  //        ec_group[0].IOsegment[0], ec_group[0].IOsegment[1],
+  //        ec_group[0].IOsegment[2], ec_group[0].IOsegment[3]);
+
+  expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
+  // printf("Calculated workcounter %d\n", expectedWKC);
+  // printf("Request operational state for all slaves\n");
+  ec_slave[0].state = EC_STATE_OPERATIONAL;
+
+  /*Wait for a few seconds*/
+  osal_usleep(300);
+
+  /* Example of how to read EtherCAT registers of a certain slave.*/
+  for (int cnt = 1; cnt <= ec_slavecount; cnt++) {
+    int ret = 0, l;
+    uint16_t sync_mode;
+    uint32_t cycle_time;
+    uint32_t minimum_cycle_time;
+    uint32_t sync0_cycle_time;
+    uint32_t get_cycle_time = 0x01;
+    l = sizeof(sync_mode);
+    ret += ec_SDOwrite(cnt, 0x1c32, 0x08, FALSE, l, &get_cycle_time,
+                       EC_TIMEOUTRXM);
+
+    ret += ec_SDOread(cnt, 0x1c32, 0x01, FALSE, &l, &sync_mode, EC_TIMEOUTRXM);
+    l = sizeof(cycle_time);
+    ret += ec_SDOread(cnt, 0x1c32, 0x02, FALSE, &l, &cycle_time, EC_TIMEOUTRXM);
+    l = sizeof(minimum_cycle_time);
+    ret += ec_SDOread(cnt, 0x1c32, 0x05, FALSE, &l, &minimum_cycle_time,
+                      EC_TIMEOUTRXM);
+    l = sizeof(sync0_cycle_time);
+    ret += ec_SDOread(cnt, 0x1c32, 0x0a, FALSE, &l, &sync0_cycle_time,
+                      EC_TIMEOUTRXM);
+    // printf(
+    //     "PDO syncmode %02x, cycle time %d ns (min %d), sync0 cycle time %d "
+    //     "ns, ret = %d\n",
+    //     sync_mode, cycle_time, minimum_cycle_time, sync0_cycle_time, ret);
+    // printf(
+    //     "Slave:%d Name:%s Output size:%3dbits Input size:%3dbits State:%2d "
+    //     "delay:%d, hasDC: %d, isDCactive: %d\n",
+    //     cnt, ec_slave[cnt].name, ec_slave[cnt].Obits, ec_slave[cnt].Ibits,
+    //     ec_slave[cnt].state, (int)ec_slave[cnt].pdelay, ec_slave[cnt].hasdc,
+    //     ec_slave[cnt].DCactive);
+    // printf("         Out:%p,%4d In:%p,%4d\n", ec_slave[cnt].outputs,
+    //        ec_slave[cnt].Obytes, ec_slave[cnt].inputs,
+    //        ec_slave[cnt].Ibytes);
+  }
+
+  buffer = new uint8_t[N_SLAVES * N_SEGMENTS * seg_len];
+
+  /* request OP state for all slaves */
+  ec_writestate(0);
+  /* activate cyclic process data */
+  set_is_ecatthread_running(1);
+
+  /* wait for all slaves to reach OP state */
+  ec_statecheck(0, EC_STATE_OPERATIONAL, 5 * EC_TIMEOUTSTATE);
+
+  if (ec_slave[0].state == EC_STATE_OPERATIONAL) {
+    // printf("Operational state reached for all slaves.\n");
+    inOP = TRUE;
+  } else {
+    // printf("Not all slaves reached operational state.\n");
+    ec_readstate();
+    for (int i = 1; i <= ec_slavecount; i++) {
+      if (ec_slave[i].state != EC_STATE_OPERATIONAL) {
+        printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n", i,
+               ec_slave[i].state, ec_slave[i].ALstatuscode,
+               ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
       }
-
-      // printf("M: output bytes: %d, input bytes: %d\n", oloop[0], iloop[0]);
-      // printf("S1: output bytes: %d, input bytes: %d\n", oloop[1],
-      //        iloop[1]);  // print of first slave I/O bytes, as an example
-      // printf("S2: output bytes: %d, input bytes: %d\n", oloop[2], iloop[2]);
-      // printf("S3: output bytes: %d, input bytes: %d\n",oloop[3],iloop[3]);
-      // printf("S4: output bytes: %d, input bytes: %d\n",oloop[4],iloop[4]);
-      // printf("S5: output bytes: %d, input bytes: %d\n",oloop[5],iloop[5]);
-      // printf("S6: output bytes: %d, input bytes: %d\n",oloop[6],iloop[6]);
-      // printf("segments : %d : %d %d %d %d\n", ec_group[0].nsegments,
-      //        ec_group[0].IOsegment[0], ec_group[0].IOsegment[1],
-      //        ec_group[0].IOsegment[2], ec_group[0].IOsegment[3]);
-
-      expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
-      // printf("Calculated workcounter %d\n", expectedWKC);
-      // printf("Request operational state for all slaves\n");
-      ec_slave[0].state = EC_STATE_OPERATIONAL;
-
-      /*Wait for a few seconds*/
-      osal_usleep(300);
-
-      /* Example of how to read EtherCAT registers of a certain slave.*/
-      for (int cnt = 1; cnt <= ec_slavecount; cnt++) {
-        int ret = 0, l;
-        uint16_t sync_mode;
-        uint32_t cycle_time;
-        uint32_t minimum_cycle_time;
-        uint32_t sync0_cycle_time;
-        uint32_t get_cycle_time = 0x01;
-        l = sizeof(sync_mode);
-        ret += ec_SDOwrite(cnt, 0x1c32, 0x08, FALSE, l, &get_cycle_time,
-                           EC_TIMEOUTRXM);
-
-        ret +=
-            ec_SDOread(cnt, 0x1c32, 0x01, FALSE, &l, &sync_mode, EC_TIMEOUTRXM);
-        l = sizeof(cycle_time);
-        ret += ec_SDOread(cnt, 0x1c32, 0x02, FALSE, &l, &cycle_time,
-                          EC_TIMEOUTRXM);
-        l = sizeof(minimum_cycle_time);
-        ret += ec_SDOread(cnt, 0x1c32, 0x05, FALSE, &l, &minimum_cycle_time,
-                          EC_TIMEOUTRXM);
-        l = sizeof(sync0_cycle_time);
-        ret += ec_SDOread(cnt, 0x1c32, 0x0a, FALSE, &l, &sync0_cycle_time,
-                          EC_TIMEOUTRXM);
-        // printf(
-        //     "PDO syncmode %02x, cycle time %d ns (min %d), sync0 cycle time %d "
-        //     "ns, ret = %d\n",
-        //     sync_mode, cycle_time, minimum_cycle_time, sync0_cycle_time, ret);
-        // printf(
-        //     "Slave:%d Name:%s Output size:%3dbits Input size:%3dbits State:%2d "
-        //     "delay:%d, hasDC: %d, isDCactive: %d\n",
-        //     cnt, ec_slave[cnt].name, ec_slave[cnt].Obits, ec_slave[cnt].Ibits,
-        //     ec_slave[cnt].state, (int)ec_slave[cnt].pdelay, ec_slave[cnt].hasdc,
-        //     ec_slave[cnt].DCactive);
-        // printf("         Out:%p,%4d In:%p,%4d\n", ec_slave[cnt].outputs,
-        //        ec_slave[cnt].Obytes, ec_slave[cnt].inputs,
-        //        ec_slave[cnt].Ibytes);
-      }
-
-      buffer = new uint8_t[N_SLAVES * N_SEGMENTS * seg_len];
-
-      /* request OP state for all slaves */
-      ec_writestate(0);
-      /* activate cyclic process data */
-      set_is_ecatthread_running(1);
-
-      /* wait for all slaves to reach OP state */
-      ec_statecheck(0, EC_STATE_OPERATIONAL, 5 * EC_TIMEOUTSTATE);
-
-      if (ec_slave[0].state == EC_STATE_OPERATIONAL) {
-        // printf("Operational state reached for all slaves.\n");
-        inOP = TRUE;
-      } else {
-        // printf("Not all slaves reached operational state.\n");
-        ec_readstate();
-        for (int i = 1; i <= ec_slavecount; i++) {
-          if (ec_slave[i].state != EC_STATE_OPERATIONAL) {
-            printf("Slave %d State=0x%2.2x StatusCode=0x%4.4x : %s\n", i,
-                   ec_slave[i].state, ec_slave[i].ALstatuscode,
-                   ec_ALstatuscode2string(ec_slave[i].ALstatuscode));
-          }
-        }
-      }
-
-
+    }
+  }
 
   // free soem areas
   // free(oloop);
@@ -274,7 +270,7 @@ void EcatHandler::print_slave_buffer(uint8_t slave, uint8_t printOutput,
 
 void EcatHandler::print_raw_buffer() {
   printf("\n ------------ Local BUFFER -----------\n");
-  for (uint8 slave = 1; slave <= N_SLAVES; slave++) {
+  for (uint8_t slave = 1; slave <= N_SLAVES; slave++) {
     printf("---> SLAVE %d \n", slave);
 
     for (int i = 0; i < N_SEGMENTS * seg_len;
@@ -350,19 +346,23 @@ void EcatHandler::print_generic_cyskin_buffer(generic_buffer_cyskin *b) {
 }
 
 void EcatHandler::xmc43_output_cast() {
-  out_xmc43 = (out_xmc43_t **)malloc(N_SLAVES * sizeof(*out_xmc43));
+  out_xmc43 =
+      reinterpret_cast<out_xmc43_t **>(malloc(N_SLAVES * sizeof(*out_xmc43)));
   /*cast of the output process data for each slave (to send a command to a
    * specific slave) */
   for (int slave = 0; slave < N_SLAVES; slave++) {
-    out_xmc43[slave] = (out_xmc43_t *)ec_slave[slave + 1].outputs;
+    out_xmc43[slave] =
+        reinterpret_cast<out_xmc43_t *>(ec_slave[slave + 1].outputs);
   }
 }
 
 void EcatHandler::xmc43_input_cast() {
-  in_xmc43 = (in_xmc43_t **)malloc(N_SLAVES * sizeof(*in_xmc43));
+  in_xmc43 =
+      reinterpret_cast<in_xmc43_t **>(malloc(N_SLAVES * sizeof(*in_xmc43)));
   /*cast of the input process data for each slave (INIT state) */
   for (int slave = 0; slave < N_SLAVES; slave++) {
-    in_xmc43[slave] = (in_xmc43_t *)(ec_slave[slave + 1].inputs);
+    in_xmc43[slave] =
+        reinterpret_cast<in_xmc43_t *>((ec_slave[slave + 1].inputs));
   }
 }
 
@@ -393,7 +393,7 @@ void EcatHandler::xmc43_set_PARAMETERS(uint8_t val1, uint8_t val2,
 
 void EcatHandler::copy_segments_to_raw_buffer(uint16_t offset) {
   for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
-    uint16 idx = offset + slave * N_SEGMENTS * seg_len;
+    uint16_t idx = offset + slave * N_SEGMENTS * seg_len;
     memcpy(&buffer[idx], ec_slave[slave + 1].inputs,
            seg_len);  // WARNING: "+1" added
   }
@@ -410,7 +410,7 @@ void EcatHandler::copy_raw_buffer_to_tof_filtered_buffer() {
   int tof_counter = 0;
   int endpoint_cnt = 0;
   int buffer_index = 0;
-  uint8 slave_tof_cnt = 0;
+  uint8_t slave_tof_cnt = 0;
 
   for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
     if (sensor_types[slave] == TYPE_TOF_SENSOR)  // TOF
@@ -475,7 +475,7 @@ void EcatHandler::copy_raw_buffer_to_tof_filtered_buffer() {
 
 void EcatHandler::copy_raw_buffer_to_cydata() {
   uint8_t pos = 0;
-  for (uint8 slave = 0; slave < N_SLAVES; slave++) {
+  for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
     if (sensor_types[slave] == TYPE_CYSKIN_SENSOR)  // CYSKIN
     {
       uint16_t msg_size = buffer[slave * SEG_LEN * N_SEGMENTS + 2] << 8 |
@@ -547,7 +547,8 @@ void EcatHandler::copy_cydata_to_filtered_buffer() {
           baseline[k] = response;
         } else {
           cyskin_filtered_buffer->cyskin_uids[k] = sensor_uid;
-          // cyskin_filtered_buffer->cyskin_responces[k] = (int)(response - baseline[k]) > 0 ? (response - baseline[k]) : 0;
+          // cyskin_filtered_buffer->cyskin_responces[k] = (int)(response -
+          // baseline[k]) > 0 ? (response - baseline[k]) : 0;
           cyskin_filtered_buffer->cyskin_responces[k] = response;
           // cout << "filtered buffer id:    " <<
           // cyskin_filtered_buffer->buffer[bounded_buffer][k] << endl; cout <<
@@ -571,7 +572,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
   set_is_ecatthread_running(0);
 
   // Wait until the ecatthread is allowed to run
-  while (!get_is_ecatthread_running());
+  while (!get_is_ecatthread_running()) continue;
 
   xmc43_output_cast();
   // print_slave_buffer(0, 1, 1); //just as an example
@@ -585,8 +586,9 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
   /********** INIT STATE **********/
   uint8_t n_ready_slaves = 0;
 
-  slave_ids = (uint16 *)malloc(N_SLAVES * sizeof(uint16_t));
-  sensor_types = (uint16 *)malloc(N_SLAVES * sizeof(uint16_t));
+  slave_ids = reinterpret_cast<uint16_t *>(malloc(N_SLAVES * sizeof(uint16_t)));
+  sensor_types =
+      reinterpret_cast<uint16_t *>(malloc(N_SLAVES * sizeof(uint16_t)));
 
   set_ECAT_STATE(INIT_STATE);
 
@@ -600,16 +602,18 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
     n_ready_slaves = 0;
     ec_receive_processdata(EC_TIMEOUTRET);
 
-    for (uint8 slave = 0; slave < N_SLAVES; slave++) {
+    for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
       if (in_xmc43[slave]->arr[0] == ID_VL53LX_INIT_MSG &&
           in_xmc43[slave]->arr[1] == 0xAA) {
         n_ready_slaves++;
         if (in_xmc43[slave]->sensor_type == TYPE_TOF_SENSOR) {
-          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",  SENSOR TYPE: TOF\n";
+          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",
+          // SENSOR TYPE: TOF\n";
           slave_ids[slave] = in_xmc43[slave]->slave_id;
           sensor_types[slave] = in_xmc43[slave]->sensor_type;
         } else if (in_xmc43[slave]->sensor_type == TYPE_CYSKIN_SENSOR) {
-          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",  SENSOR TYPE: CYSKIN\n";
+          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",
+          // SENSOR TYPE: CYSKIN\n";
           slave_ids[slave] = in_xmc43[slave]->slave_id;
           sensor_types[slave] = in_xmc43[slave]->sensor_type;
         }
@@ -625,31 +629,32 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
     osal_usleep(20000);
   }
 
-  TOF_mask = (uint8_t **)malloc(N_TOF_SLAVES * sizeof(uint8_t *));
+  TOF_mask =
+      reinterpret_cast<uint8_t **>(malloc(N_TOF_SLAVES * sizeof(uint8_t *)));
 
   if (TOF_mask == NULL) {
     printf("Error: Memory allocation failed\n");
-    while (1);
+    while (1) continue;
   }
   /* Statically allocated array of structs containing initialization message of
    * each slave */
   VL53LX_FULL_INIT_MSG init_tof_data[N_TOF_SLAVES];
   CYSKIN_INIT_MESSAGE init_cyskin_data[N_CYSKIN_SLAVES];
-  uint8 slave_tof_cnt = 0;
-  uint8 slave_cyskin_cnt = 0;
+  uint8_t slave_tof_cnt = 0;
+  uint8_t slave_cyskin_cnt = 0;
 
-  for (uint8 slave = 0; slave < N_SLAVES; slave++) {
+  for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
     /********************* TOF SENSORS SLAVES ***********************/
     if (in_xmc43[slave]->sensor_type == TYPE_TOF_SENSOR) {
       // std::cout << "\nqui ci sono 2\n";
       memcpy(&init_tof_data[slave_tof_cnt], in_xmc43[slave],
              sizeof(VL53LX_FULL_INIT_MSG));
 
-      TOF_mask[slave_tof_cnt] =
-          (uint8_t *)malloc(TOF_TOTAL_NUMBER * sizeof(uint8_t));
+      TOF_mask[slave_tof_cnt] = reinterpret_cast<uint8_t *>(
+          malloc(TOF_TOTAL_NUMBER * sizeof(uint8_t)));
       if (TOF_mask[slave_tof_cnt] == NULL) {
         printf("Error: Memory allocation failed\n");
-        while (1);
+        while (1) continue;
       }
 
       for (uint8_t tof = 0; tof < TOF_TOTAL_NUMBER; tof++) {
@@ -674,7 +679,8 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
           init_cyskin_data[slave_cyskin_cnt].ihb_info.tot_modules_cnt;
 
       init_cyskin_data[slave_cyskin_cnt].mod_info =
-          (ModuleInfo *)malloc(sizeof(ModuleInfo) * total_modules_count);
+          reinterpret_cast<ModuleInfo *>(
+              malloc(sizeof(ModuleInfo) * total_modules_count));
       memcpy(init_cyskin_data[slave_cyskin_cnt].mod_info,
              &in_xmc43[slave]->arr[9],
              (sizeof(ModuleInfo) * total_modules_count));
@@ -726,13 +732,14 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
     }
   }
 
-  TOFs_in_slave = (uint8 *)malloc(slave_tof_cnt * sizeof(uint8_t));
+  TOFs_in_slave =
+      reinterpret_cast<uint8_t *>(malloc(slave_tof_cnt * sizeof(uint8_t)));
   slave_tof_cnt = 0;
 
-  for (uint8 slave = 0; slave < N_SLAVES; slave++) {
+  for (uint8_t slave = 0; slave < N_SLAVES; slave++) {
     /********************* TOF SENSORS SLAVES ***********************/
     if (in_xmc43[slave]->sensor_type == TYPE_TOF_SENSOR) {
-      uint8 tof_cnt_in_slave = 0;
+      uint8_t tof_cnt_in_slave = 0;
       for (uint8_t tof = 0; tof < TOF_TOTAL_NUMBER; tof++) {
         if (TOF_mask[slave_tof_cnt][tof] == 1)
           TOFs_in_slave[slave_tof_cnt] += 1;
@@ -851,7 +858,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
 
   int ret = 0, l;
   l = sizeof(cycle_time_SM2);
-  uint16 cnt = 3;
+  uint16_t cnt = 3;
 
   // ret += ec_SDOread(1, 0x1c32, 0x05, FALSE, &l, &minimum_cycle_time_SM2_1,
   // EC_TIMEOUTRXM); ret += ec_SDOread(1, 0x1c33, 0x05, FALSE, &l,
@@ -977,9 +984,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
 
         timespec_get(&tprev, TIME_UTC);
         ec_send_processdata();
-
       } while (curSegment % N_SEGMENTS);
-
       timespec_get(&t_full_next, TIME_UTC);
       timespec_diff(&t_full_prev, &t_full_next, &t_total);
       // cout << "Raw timespec.time_t: " << tdiff.tv_sec << "\n" << "Raw
@@ -1003,7 +1008,8 @@ void EcatHandler::init_ecatcheck() {
   // Clean up resources
   pthread_attr_destroy(&attr);
   if (ret != 0) {
-    cerr << "Failed to create ecatcheck thread. Error code: " << ret << endl;
+    std::cerr << "Failed to create ecatcheck thread. Error code: " << ret
+              << std::endl;
     return;
   }
   // Thread created successfully
@@ -1022,7 +1028,8 @@ void EcatHandler::init_ecatthread() {
                        this);
   pthread_attr_destroy(&attr);
   if (ret != 0) {
-    cerr << "Failed to create ecatthread thread. Error code: " << ret << endl;
+    std::cerr << "Failed to create ecatthread thread. Error code: " << ret
+              << std::endl;
     return;
   }
   memset(&schparam, 0, sizeof(schparam));
@@ -1030,8 +1037,9 @@ void EcatHandler::init_ecatthread() {
   pthread_setschedparam(*threadp, SCHED_FIFO, &schparam);
   if (ret != 0) {
     // Error occurred while setting thread scheduling parameters
-    cerr << "Failed to set scheduling parameters for ecatthread. Error code: "
-         << ret << endl;
+    std::cerr
+        << "Failed to set scheduling parameters for ecatthread. Error code: "
+        << ret << std::endl;
     return;
   }
 }
