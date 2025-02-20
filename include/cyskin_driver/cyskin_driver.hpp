@@ -54,7 +54,7 @@ bool DriverCyskin::Attach() {
                                           macroc_time, check_thread_sleep);
     // EtherCAT Master waiting for all patches to be ready
     while (ecat_->get_ECAT_STATE() < DATA_ACQUISITION_STATE) continue;
-    std::cout << "\nEtherCAT network ready\n";
+    // std::cout << "\nEtherCAT network ready\n";
   } catch (const std::exception& e) {
     std::cerr << "Exception occurred: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
@@ -105,9 +105,9 @@ bool DriverCyskin::Attach() {
   skin::sensorIds_t uids(GetNumberOfSensors());
   for (int i = 0; i < devices_info[0].number_of_sensors; i++) {
     uids[i] = genbuf_cyskin_->cyskin_uids[i];
-    std::cout << static_cast<int>(uids[i]) << ",  ";
+    // std::cout << static_cast<int>(uids[i]) << ",  ";
   }
-  std::cout << "\n\n  ";
+  // std::cout << "\n\n  ";
 
   SetSensorsUIds(devices_info[0], uids);
 

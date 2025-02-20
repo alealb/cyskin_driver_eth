@@ -28,12 +28,12 @@ EcatHandler::EcatHandler(char *ifname, int macroc_time,
 }
 
 EcatHandler::~EcatHandler() {
-  printf("Request safe operational state for all slaves\n");
+  // printf("Request safe operational state for all slaves\n");
   ec_slave[0].state = EC_STATE_SAFE_OP;
   /* request SAFE_OP state for all slaves */
   ec_writestate(0);
 
-  printf("End test, close socket\n");
+  // printf("End test, close socket\n");
   /* stop SOEM, close socket */
   ec_close();
 
@@ -55,7 +55,7 @@ void EcatHandler::ecat_init() {
   for(auto &interface : interfaces){
     if(ec_init(interface.c_str())){
       if (ec_config_init(FALSE) > 0) {
-        printf("ec_init on %s succeeded.\n", interface.c_str());
+        // printf("ec_init on %s succeeded.\n", interface.c_str());
         if_name = interface;
         break;
       }
@@ -75,16 +75,14 @@ void EcatHandler::ecat_init() {
       /*Read slave properties via SDO before OP state(e.g. the type of slave and
        * its payload )*/
       for (int i = 1; i <= ec_slavecount; i++) {
-        printf("Slave %d (%s) State: %d\n", i, ec_slave[i].name,
-               ec_slave[i].state);
+        // printf("Slave %d (%s) State: %d\n", i, ec_slave[i].name,ec_slave[i].state);
         uint32 data;  // data will be stored here
         int rdl = sizeof(data);
         ec_SDOread(i, 0x6010, 0x01, FALSE, &rdl, &data, EC_TIMEOUTRXM);
         slave_id[i - 1] = data;
         ec_SDOread(i, 0x6010, 0x02, FALSE, &rdl, &data, EC_TIMEOUTRXM);
         slave_sensor_type[i - 1] = data;
-        printf("SLAVE ID: %d, SLAVE SENSOR_TYPE: %d\n", slave_id[i - 1],
-               slave_sensor_type[i - 1]);
+        // printf("SLAVE ID: %d, SLAVE SENSOR_TYPE: %d\n", slave_id[i - 1], slave_sensor_type[i - 1]);
         if (slave_sensor_type[i - 1] == TYPE_TOF_SENSOR)
           N_TOF_SLAVES += 1;
         else if (slave_sensor_type[i - 1] == TYPE_CYSKIN_SENSOR)
@@ -110,8 +108,8 @@ void EcatHandler::ecat_init() {
       // oloop= new int(N_SLAVES*sizeof(int));
       // iloop= new int(N_SLAVES*sizeof(int));
 
-      printf("%d\n", *oloop);
-      printf("%d\n", *iloop);
+      // printf("%d\n", *oloop);
+      // printf("%d\n", *iloop);
 
       for (int slave = 0; slave <= N_SLAVES; slave++) {
         oloop[slave] = ec_slave[slave].Obytes;
@@ -122,21 +120,21 @@ void EcatHandler::ecat_init() {
           iloop[slave] = 1;
       }
 
-      printf("M: output bytes: %d, input bytes: %d\n", oloop[0], iloop[0]);
-      printf("S1: output bytes: %d, input bytes: %d\n", oloop[1],
-             iloop[1]);  // print of first slave I/O bytes, as an example
-      printf("S2: output bytes: %d, input bytes: %d\n", oloop[2], iloop[2]);
+      // printf("M: output bytes: %d, input bytes: %d\n", oloop[0], iloop[0]);
+      // printf("S1: output bytes: %d, input bytes: %d\n", oloop[1],
+      //        iloop[1]);  // print of first slave I/O bytes, as an example
+      // printf("S2: output bytes: %d, input bytes: %d\n", oloop[2], iloop[2]);
       // printf("S3: output bytes: %d, input bytes: %d\n",oloop[3],iloop[3]);
       // printf("S4: output bytes: %d, input bytes: %d\n",oloop[4],iloop[4]);
       // printf("S5: output bytes: %d, input bytes: %d\n",oloop[5],iloop[5]);
       // printf("S6: output bytes: %d, input bytes: %d\n",oloop[6],iloop[6]);
-      printf("segments : %d : %d %d %d %d\n", ec_group[0].nsegments,
-             ec_group[0].IOsegment[0], ec_group[0].IOsegment[1],
-             ec_group[0].IOsegment[2], ec_group[0].IOsegment[3]);
+      // printf("segments : %d : %d %d %d %d\n", ec_group[0].nsegments,
+      //        ec_group[0].IOsegment[0], ec_group[0].IOsegment[1],
+      //        ec_group[0].IOsegment[2], ec_group[0].IOsegment[3]);
 
       expectedWKC = (ec_group[0].outputsWKC * 2) + ec_group[0].inputsWKC;
-      printf("Calculated workcounter %d\n", expectedWKC);
-      printf("Request operational state for all slaves\n");
+      // printf("Calculated workcounter %d\n", expectedWKC);
+      // printf("Request operational state for all slaves\n");
       ec_slave[0].state = EC_STATE_OPERATIONAL;
 
       /*Wait for a few seconds*/
@@ -165,19 +163,19 @@ void EcatHandler::ecat_init() {
         l = sizeof(sync0_cycle_time);
         ret += ec_SDOread(cnt, 0x1c32, 0x0a, FALSE, &l, &sync0_cycle_time,
                           EC_TIMEOUTRXM);
-        printf(
-            "PDO syncmode %02x, cycle time %d ns (min %d), sync0 cycle time %d "
-            "ns, ret = %d\n",
-            sync_mode, cycle_time, minimum_cycle_time, sync0_cycle_time, ret);
-        printf(
-            "Slave:%d Name:%s Output size:%3dbits Input size:%3dbits State:%2d "
-            "delay:%d, hasDC: %d, isDCactive: %d\n",
-            cnt, ec_slave[cnt].name, ec_slave[cnt].Obits, ec_slave[cnt].Ibits,
-            ec_slave[cnt].state, (int)ec_slave[cnt].pdelay, ec_slave[cnt].hasdc,
-            ec_slave[cnt].DCactive);
-        printf("         Out:%p,%4d In:%p,%4d\n", ec_slave[cnt].outputs,
-               ec_slave[cnt].Obytes, ec_slave[cnt].inputs,
-               ec_slave[cnt].Ibytes);
+        // printf(
+        //     "PDO syncmode %02x, cycle time %d ns (min %d), sync0 cycle time %d "
+        //     "ns, ret = %d\n",
+        //     sync_mode, cycle_time, minimum_cycle_time, sync0_cycle_time, ret);
+        // printf(
+        //     "Slave:%d Name:%s Output size:%3dbits Input size:%3dbits State:%2d "
+        //     "delay:%d, hasDC: %d, isDCactive: %d\n",
+        //     cnt, ec_slave[cnt].name, ec_slave[cnt].Obits, ec_slave[cnt].Ibits,
+        //     ec_slave[cnt].state, (int)ec_slave[cnt].pdelay, ec_slave[cnt].hasdc,
+        //     ec_slave[cnt].DCactive);
+        // printf("         Out:%p,%4d In:%p,%4d\n", ec_slave[cnt].outputs,
+        //        ec_slave[cnt].Obytes, ec_slave[cnt].inputs,
+        //        ec_slave[cnt].Ibytes);
       }
 
       buffer = new uint8_t[N_SLAVES * N_SEGMENTS * seg_len];
@@ -191,10 +189,10 @@ void EcatHandler::ecat_init() {
       ec_statecheck(0, EC_STATE_OPERATIONAL, 5 * EC_TIMEOUTSTATE);
 
       if (ec_slave[0].state == EC_STATE_OPERATIONAL) {
-        printf("Operational state reached for all slaves.\n");
+        // printf("Operational state reached for all slaves.\n");
         inOP = TRUE;
       } else {
-        printf("Not all slaves reached operational state.\n");
+        // printf("Not all slaves reached operational state.\n");
         ec_readstate();
         for (int i = 1; i <= ec_slavecount; i++) {
           if (ec_slave[i].state != EC_STATE_OPERATIONAL) {
@@ -607,20 +605,18 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
           in_xmc43[slave]->arr[1] == 0xAA) {
         n_ready_slaves++;
         if (in_xmc43[slave]->sensor_type == TYPE_TOF_SENSOR) {
-          std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id
-                    << ",  SENSOR TYPE: TOF\n";
+          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",  SENSOR TYPE: TOF\n";
           slave_ids[slave] = in_xmc43[slave]->slave_id;
           sensor_types[slave] = in_xmc43[slave]->sensor_type;
         } else if (in_xmc43[slave]->sensor_type == TYPE_CYSKIN_SENSOR) {
-          std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id
-                    << ",  SENSOR TYPE: CYSKIN\n";
+          // std::cout << "SLAVE ID: " << (int)in_xmc43[slave]->slave_id << ",  SENSOR TYPE: CYSKIN\n";
           slave_ids[slave] = in_xmc43[slave]->slave_id;
           sensor_types[slave] = in_xmc43[slave]->sensor_type;
         }
       }
     }
 
-    printf("READY SLAVES: %d\n", n_ready_slaves);
+    // printf("READY SLAVES: %d\n", n_ready_slaves);
     // print_slave_buffer(1, 1, 1);
     // print_slave_buffer(2, 1, 1);
 
@@ -645,7 +641,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
   for (uint8 slave = 0; slave < N_SLAVES; slave++) {
     /********************* TOF SENSORS SLAVES ***********************/
     if (in_xmc43[slave]->sensor_type == TYPE_TOF_SENSOR) {
-      std::cout << "\nqui ci sono 2\n";
+      // std::cout << "\nqui ci sono 2\n";
       memcpy(&init_tof_data[slave_tof_cnt], in_xmc43[slave],
              sizeof(VL53LX_FULL_INIT_MSG));
 
@@ -682,14 +678,14 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
       memcpy(init_cyskin_data[slave_cyskin_cnt].mod_info,
              &in_xmc43[slave]->arr[9],
              (sizeof(ModuleInfo) * total_modules_count));
-      printf("\n----- INIT DATA SLAVE %d -----\n", slave + 1);
-      printf("message header: %d\n",
-             (uint16_t)init_cyskin_data[slave_cyskin_cnt].header.msg_id);
-      printf("ihb_id: %d\n",
-             (uint32_t)init_cyskin_data[slave_cyskin_cnt].ihb_info.ihb_id);
-      printf(
-          "number of modules: %d\n",
-          (uint8_t)init_cyskin_data[slave_cyskin_cnt].ihb_info.tot_modules_cnt);
+      // printf("\n----- INIT DATA SLAVE %d -----\n", slave + 1);
+      // printf("message header: %d\n",
+      //        (uint16_t)init_cyskin_data[slave_cyskin_cnt].header.msg_id);
+      // printf("ihb_id: %d\n",
+      //        (uint32_t)init_cyskin_data[slave_cyskin_cnt].ihb_info.ihb_id);
+      // printf(
+      //     "number of modules: %d\n",
+      //     (uint8_t)init_cyskin_data[slave_cyskin_cnt].ihb_info.tot_modules_cnt);
 
       rihbs = CyIhbInfo((init_cyskin_data[slave_cyskin_cnt].ihb_info.ihb_id));
 
@@ -726,7 +722,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
       }
       ihbs.push_back(new CyIhb(rihbs));
       slave_cyskin_cnt++;
-      std::cout << "\nqui ci sono 1\n";
+      // std::cout << "\nqui ci sono 1\n";
     }
   }
 
@@ -746,23 +742,22 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
   }
 
   // print_TOF_mask();
-  printf("Actual TOF number: %d\n", actual_TOF_number);
+  // printf("Actual TOF number: %d\n", actual_TOF_number);
 
   for (auto ihb : ihbs) {
     for (auto &module : ihb->get_ihb_devs().get_modules()) {
-      std::cout << "module id:  " << (int)module.get_sui() << "\n\n";
       uint16_t cnt = 0;
       for (uint32_t s = 1; s < module.get_sensors().size(); s++) {
         taxel_number++;
         cnt++;
         // std::cout << "taxel number:  " << taxel_number << "\n\n";
       }
-      std::cout << "taxel number:  " << (int)cnt << "\n\n";
+      // std::cout << "taxel number:  " << (int)cnt << "\n\n";
     }
   }
 
-  std::cout << "taxel number:  " << taxel_number << "\n\n";
-  fflush(stdout);
+  // std::cout << "taxel number:  " << taxel_number << "\n\n";
+  // fflush(stdout);
 
   /* Allocate filtered_buffer with a VL53LX_DATA_64_MSG struct for each active
    * sensor + a slave ID to add to each TOF struct */
@@ -827,7 +822,7 @@ OSAL_THREAD_FUNC_RT *EcatHandler::ecatthread(void *ptr) {
   baseline = std::vector<uint32_t>(taxel_number, 0);
   if (remove_baseline) steps_baseline = 50;
 
-  printf("FSM: from %d to %d", INIT_STATE, DATA_ACQUISITION_STATE);
+  // printf("FSM: from %d to %d", INIT_STATE, DATA_ACQUISITION_STATE);
 
   /********** DATA ACQUISITION STATE **********/
   set_ECAT_STATE(DATA_ACQUISITION_STATE);
