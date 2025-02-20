@@ -112,7 +112,7 @@ bool DriverCyskin::Attach() {
   SetSensorsUIds(devices_info[0], uids);
 
   // Set the baseline
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   genbuf_cyskin_ = ecat_->getCyskinGenericBuffer();
   cyskin_baseline_.resize(GetNumberOfSensors());
   for (int i = 0; i < devices_info[0].number_of_sensors; i++) {
@@ -128,12 +128,12 @@ void DriverCyskin::Update() {
   genbuf_cyskin_ = ecat_->getCyskinGenericBuffer();
 
   // Get sensors responses
-  skin::SensorsResponses sensors_readings(GetNumberOfMeasurements());
+  skin::SensorsResponses sensors_readings(GetNumberOfSensors());
   for (int i = 0; i < devices_info[0].number_of_sensors; i++) {
     sensors_readings[i] = genbuf_cyskin_->cyskin_responces[i];
   }
   // Add the baseline
-  // sensors_readings.insert(sensors_readings.end(), cyskin_baseline_.begin(),cyskin_baseline_.end());
+  sensors_readings.insert(sensors_readings.end(), cyskin_baseline_.begin(),cyskin_baseline_.end());
 
   SetSensorsResponses(devices_info[0], std::move(sensors_readings));
 }
